@@ -1,18 +1,17 @@
+use rand_core::{CryptoRng, RngCore};
+
 use crate::{
-  fips202::*, packing::*, params::*, poly::*, polyvec::*, randombytes::*,
-  SignError,
+  fips202::*, packing::*, params::*, poly::*, polyvec::*, SignError,
 };
 
 pub fn crypto_sign_keypair(
   pk: &mut [u8],
   sk: &mut [u8],
-  seed: Option<&[u8]>,
-) -> u8 {
+  mut rng: impl RngCore + CryptoRng,
+) -> u8
+{
   let mut init_seed = [0u8; SEEDBYTES];
-  match seed {
-    Some(x) => init_seed.copy_from_slice(x),
-    None => randombytes(&mut init_seed, SEEDBYTES),
-  };
+  rng.fill_bytes(&mut init_seed);
   let mut seedbuf = [0u8; 2 * SEEDBYTES + CRHBYTES];
   let mut tr = [0u8; SEEDBYTES];
   let (mut rho, mut rhoprime, mut key) =
@@ -64,7 +63,13 @@ pub fn crypto_sign_keypair(
   return 0;
 }
 
-pub fn crypto_sign_signature(sig: &mut [u8], m: &[u8], sk: &[u8]) {
+pub fn crypto_sign_signature(
+  sig: &mut [u8],
+  m: &[u8],
+  sk: &[u8],
+  mut rng: impl RngCore + CryptoRng,
+)
+{
   // `key` and `mu` are concatenated
   let mut keymu = [0u8; SEEDBYTES + CRHBYTES];
 
@@ -96,11 +101,7 @@ pub fn crypto_sign_signature(sig: &mut [u8], m: &[u8], sk: &[u8]) {
   shake256_finalize(&mut state);
   shake256_squeeze(&mut keymu[SEEDBYTES..], CRHBYTES, &mut state);
 
-  if RANDOMIZED_SIGNING {
-    randombytes(&mut rhoprime, CRHBYTES);
-  } else {
-    shake256(&mut rhoprime, CRHBYTES, &keymu, SEEDBYTES + CRHBYTES);
-  }
+  rng.fill_bytes(&mut rhoprime[..CRHBYTES]);
 
   // Expand matrix and transform vectors
   polyvec_matrix_expand(&mut mat, &rho);
@@ -176,7 +177,8 @@ pub fn crypto_sign_verify(
   sig: &[u8],
   m: &[u8],
   pk: &[u8],
-) -> Result<(), SignError> {
+) -> Result<(), SignError>
+{
   let mut buf = [0u8; K * POLYW1_PACKEDBYTES];
   let mut rho = [0u8; SEEDBYTES];
   let mut mu = [0u8; CRHBYTES];

@@ -1,25 +1,33 @@
+use rand_core::{CryptoRng, RngCore};
+
 use crate::params::{PUBLICKEYBYTES, SECRETKEYBYTES, SIGNBYTES};
 use crate::sign::*;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
-pub struct Keypair {
+pub struct Keypair
+{
   pub public: [u8; PUBLICKEYBYTES],
   secret: [u8; SECRETKEYBYTES],
 }
 
 /// Secret key elided
-impl std::fmt::Debug for Keypair {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+#[cfg(feature = "std")]
+impl std::fmt::Debug for Keypair
+{
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+  {
     write!(f, "public: {:?}\nsecret: <elided>", self.public)
   }
 }
 
-pub enum SignError {
+pub enum SignError
+{
   Input,
   Verify,
 }
 
-impl Keypair {
+impl Keypair
+{
   /// Explicitly expose secret key
   /// ```
   /// # use pqc_dilithium::*;
@@ -27,7 +35,8 @@ impl Keypair {
   /// let secret_key = keys.expose_secret();
   /// assert!(secret_key.len() == SECRETKEYBYTES);
   /// ```
-  pub fn expose_secret(&self) -> &[u8] {
+  pub fn expose_secret(&self) -> &[u8]
+  {
     &self.secret
   }
 
@@ -40,10 +49,19 @@ impl Keypair {
   /// assert!(keys.public.len() == PUBLICKEYBYTES);
   /// assert!(keys.expose_secret().len() == SECRETKEYBYTES);
   /// ```
-  pub fn generate() -> Keypair {
+  #[cfg(feature = "getrandom")]
+  pub fn generate() -> Keypair
+  {
+    use rand_core::OsRng;
+
+    Self::generate_with(OsRng)
+  }
+
+  pub fn generate_with(rng: impl RngCore + CryptoRng) -> Keypair
+  {
     let mut public = [0u8; PUBLICKEYBYTES];
     let mut secret = [0u8; SECRETKEYBYTES];
-    crypto_sign_keypair(&mut public, &mut secret, None);
+    crypto_sign_keypair(&mut public, &mut secret, rng);
     Keypair { public, secret }
   }
 
@@ -56,10 +74,23 @@ impl Keypair {
   /// let msg = "Hello".as_bytes();
   /// let sig = keys.sign(&msg);
   /// assert!(sig.len() == SIGNBYTES);
-  /// ```  
-  pub fn sign(&self, msg: &[u8]) -> [u8; SIGNBYTES] {
+  /// ```
+  #[cfg(feature = "getrandom")]
+  pub fn sign(&self, msg: &[u8]) -> [u8; SIGNBYTES]
+  {
+    use rand_core::OsRng;
+
+    self.sign_with(msg, OsRng)
+  }
+
+  pub fn sign_with(
+    &self,
+    msg: &[u8],
+    rng: impl RngCore + CryptoRng,
+  ) -> [u8; SIGNBYTES]
+  {
     let mut sig = [0u8; SIGNBYTES];
-    crypto_sign_signature(&mut sig, msg, &self.secret);
+    crypto_sign_signature(&mut sig, msg, &self.secret, rng);
     sig
   }
 }
@@ -78,7 +109,8 @@ pub fn verify(
   sig: &[u8],
   msg: &[u8],
   public_key: &[u8],
-) -> Result<(), SignError> {
+) -> Result<(), SignError>
+{
   if sig.len() != SIGNBYTES {
     return Err(SignError::Input);
   }

@@ -12,25 +12,23 @@ exclude = ["tests/KAT"]
 rust-version = "1.50"
 
 [dependencies]
-rand_core = { version = "0.6.4",  default-features = false }
-getrandom = {version = "0.2.10", features = ["js"], optional = true }
+gr = { package = "getrandom", version = "0.2.10", optional = true }
+rand_core = "0.6.4"
 wasm-bindgen = { version = "0.2.87", optional = true }
-
-[dependencies.rand]
-version = "0.8.5"
-features = ["getrandom"]
 
 [dev-dependencies]
 pqc_core = {version = "0.3.0", features = ["load"]}
 
 [target.'cfg(bench)'.dev-dependencies.criterion]
-criterion = "0.4.0"
+version = "0.4.0"
 
 [[bench]]
 name = "api"
 harness = false
 
 [features]
+default = ["mode3", "aes", "std", "getrandom"]
+
 # By default this library uses mode3, also called Dilithium3
 mode2 = []
 mode3 = []
@@ -38,16 +36,10 @@ mode5 = []
 
 # Enables AES mode which uses AES-256 in counter mode instead of SHAKE
 aes = []
+std = []
 
-# Produces a random signature everytime when signing the same message.
-# One may want to consider randomized signatures in situations where the side channel
-# attacks exploiting determinism are applicable. Another situation
-# where one may want to avoid determinism is when the signer does not wish to reveal the
-# message that is being signed.
-random_signing = []
+getrandom = ["gr", "rand_core/getrandom"]
 
 # For compiling to wasm targets 
-wasm = ["wasm-bindgen", "getrandom/js"]
+wasm = ["wasm-bindgen", "gr/js"]
 
-[lib]
-crate-type = ["cdylib", "rlib"]

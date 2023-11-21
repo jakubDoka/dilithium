@@ -1,3 +1,4 @@
+#![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(feature = "aes")]
 mod aes256ctr;
 mod api;
@@ -7,7 +8,6 @@ mod packing;
 mod params;
 mod poly;
 mod polyvec;
-mod randombytes;
 mod reduce;
 mod rounding;
 mod sign;
