@@ -27,7 +27,7 @@ name = "api"
 harness = false
 
 [features]
-default = ["mode3", "aes", "std", "getrandom"]
+default = ["mode3", "std", "getrandom"]
 
 # By default this library uses mode3, also called Dilithium3
 mode2 = []

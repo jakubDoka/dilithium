@@ -101,6 +101,7 @@ pub fn crypto_sign_signature(
   shake256_finalize(&mut state);
   shake256_squeeze(&mut keymu[SEEDBYTES..], CRHBYTES, &mut state);
 
+  //shake256(&mut rhoprime, CRHBYTES, &keymu, SEEDBYTES + CRHBYTES);
   rng.fill_bytes(&mut rhoprime[..CRHBYTES]);
 
   // Expand matrix and transform vectors
