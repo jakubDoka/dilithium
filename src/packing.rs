@@ -1,7 +1,8 @@
 use crate::{params::*, poly::*, polyvec::*, SignError};
 
 /// Bit-pack public key pk = (rho, t1).
-pub fn pack_pk(pk: &mut [u8], rho: &[u8], t1: &Polyveck) {
+pub fn pack_pk(pk: &mut [u8], rho: &[u8], t1: &Polyveck)
+{
   pk[..SEEDBYTES].copy_from_slice(&rho[..SEEDBYTES]);
   for i in 0..K {
     polyt1_pack(&mut pk[SEEDBYTES + i * POLYT1_PACKEDBYTES..], &t1.vec[i]);
@@ -9,7 +10,8 @@ pub fn pack_pk(pk: &mut [u8], rho: &[u8], t1: &Polyveck) {
 }
 
 /// Unpack public key pk = (rho, t1).
-pub fn unpack_pk(rho: &mut [u8], t1: &mut Polyveck, pk: &[u8]) {
+pub fn unpack_pk(rho: &mut [u8], t1: &mut Polyveck, pk: &[u8])
+{
   rho[..SEEDBYTES].copy_from_slice(&pk[..SEEDBYTES]);
   for i in 0..K {
     polyt1_unpack(&mut t1.vec[i], &pk[SEEDBYTES + i * POLYT1_PACKEDBYTES..])
@@ -25,7 +27,8 @@ pub fn pack_sk(
   t0: &Polyveck,
   s1: &Polyvecl,
   s2: &Polyveck,
-) {
+)
+{
   let mut idx = 0usize;
 
   sk[idx..SEEDBYTES].copy_from_slice(&rho[0..SEEDBYTES]);
@@ -61,7 +64,8 @@ pub fn unpack_sk(
   s1: &mut Polyvecl,
   s2: &mut Polyveck,
   sk: &[u8],
-) {
+)
+{
   let mut idx = 0usize;
 
   rho[..SEEDBYTES].copy_from_slice(&sk[..SEEDBYTES]);
@@ -89,7 +93,8 @@ pub fn unpack_sk(
 }
 
 /// Bit-pack signature sig = (c, z, h).
-pub fn pack_sig(sig: &mut [u8], c: Option<&[u8]>, z: &Polyvecl, h: &Polyveck) {
+pub fn pack_sig(sig: &mut [u8], c: Option<&[u8]>, z: &Polyvecl, h: &Polyveck)
+{
   let mut idx = 0usize;
 
   if let Some(challenge) = c {
@@ -123,7 +128,8 @@ pub fn unpack_sig(
   z: &mut Polyvecl,
   h: &mut Polyveck,
   sig: &[u8],
-) -> Result<(), SignError> {
+) -> Result<(), SignError>
+{
   let mut idx = 0usize;
 
   c[..SEEDBYTES].copy_from_slice(&sig[..SEEDBYTES]);

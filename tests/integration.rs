@@ -1,7 +1,8 @@
 use pqc_dilithium::*;
 
 #[test]
-fn sign_then_verify_valid() {
+fn sign_then_verify_valid()
+{
   let msg = b"Hello";
   let keys = Keypair::generate();
   let signature = keys.sign(msg);
@@ -9,7 +10,8 @@ fn sign_then_verify_valid() {
 }
 
 #[test]
-fn sign_then_verify_invalid() {
+fn sign_then_verify_invalid()
+{
   let msg = b"Hello";
   let keys = Keypair::generate();
   let mut signature = keys.sign(msg);
