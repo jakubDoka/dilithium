@@ -146,7 +146,7 @@ pub fn polyvecl_chknorm(v: &Polyvecl, bound: i32) -> u8
       return 1;
     }
   }
-  return 0;
+  0
 }
 
 //*********** Vectors of polynomials of length K ****************************
@@ -247,7 +247,7 @@ pub fn polyveck_chknorm(v: &Polyveck, bound: i32) -> u8
       return 1;
     }
   }
-  return 0;
+  0
 }
 
 /// For all coefficients a of polynomials in vector of length K,

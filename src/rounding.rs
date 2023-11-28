@@ -9,7 +9,7 @@ pub fn power2round(a: i32, a0: &mut i32) -> i32
 {
   let a1 = (a + (1 << (D - 1)) - 1) >> D;
   *a0 = a - (a1 << D);
-  return a1;
+  a1
 }
 
 /// For finite field element a, compute high and low bits a0, a1 such
@@ -40,10 +40,10 @@ pub fn decompose(a0: &mut i32, a: i32) -> i32
 /// Returns 1 if overflow.
 pub fn make_hint(a0: i32, a1: i32) -> u8
 {
-  if a0 > GAMMA2_I32 || a0 < -GAMMA2_I32 || (a0 == -GAMMA2_I32 && a1 != 0) {
+  if !(-GAMMA2_I32..=GAMMA2_I32).contains(&a0) || (a0 == -GAMMA2_I32 && a1 != 0) {
     return 1;
   }
-  return 0;
+  0
 }
 
 /// Correct high bits according to hint.
@@ -59,23 +59,19 @@ pub fn use_hint(a: i32, hint: u8) -> i32
 
   if GAMMA2 == (Q - 1) / 32 {
     if a0 > 0 {
-      return (a1 + 1) & 15;
+      (a1 + 1) & 15
     } else {
-      return (a1 - 1) & 15;
+      (a1 - 1) & 15
     }
+  } else if a0 > 0 {
+    if a1 == 43 {
+      0
+    } else {
+      a1 + 1
+    }
+  } else if a1 == 0 {
+    43
   } else {
-    if a0 > 0 {
-      if a1 == 43 {
-        return 0;
-      } else {
-        return a1 + 1;
-      };
-    } else {
-      if a1 == 0 {
-        return 43;
-      } else {
-        return a1 - 1;
-      }
-    }
+    a1 - 1
   }
 }

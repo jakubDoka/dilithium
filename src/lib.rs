@@ -1,4 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::all)]
 #[cfg(feature = "aes")]
 mod aes256ctr;
 mod api;

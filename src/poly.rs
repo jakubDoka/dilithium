@@ -40,7 +40,7 @@ pub fn poly_caddq(a: &mut Poly)
 pub fn poly_add(c: &mut Poly, b: &Poly)
 {
   for i in 0..N {
-    c.coeffs[i] = c.coeffs[i] + b.coeffs[i];
+    c.coeffs[i] += b.coeffs[i];
   }
 }
 
@@ -50,7 +50,7 @@ pub fn poly_add(c: &mut Poly, b: &Poly)
 pub fn poly_sub(c: &mut Poly, b: &Poly)
 {
   for i in 0..N {
-    c.coeffs[i] = c.coeffs[i] - b.coeffs[i];
+    c.coeffs[i] -= b.coeffs[i];
   }
 }
 
@@ -153,13 +153,13 @@ pub fn poly_chknorm(a: &Poly, b: i32) -> u8
   for i in 0..N {
     // Absolute value of centralized representative
     t = a.coeffs[i] >> 31;
-    t = a.coeffs[i] - (t & 2 * a.coeffs[i]);
+    t = a.coeffs[i] - (t & (2 * a.coeffs[i]));
 
     if t >= b {
       return 1;
     }
   }
-  return 0;
+  0
 }
 
 /// Sample uniformly random coefficients in [0, Q-1] by
@@ -233,12 +233,12 @@ pub fn rej_eta(a: &mut [i32], len: usize, buf: &[u8], buflen: usize) -> u32
 
     if ETA == 2 {
       if t0 < 15 {
-        t0 = t0 - (205 * t0 >> 10) * 5;
+        t0 = t0 - ((205 * t0) >> 10) * 5;
         a[ctr] = 2 - t0 as i32;
         ctr += 1;
       }
       if t1 < 15 && ctr < len {
-        t1 = t1 - (205 * t1 >> 10) * 5;
+        t1 = t1 - ((205 * t1) >> 10) * 5;
         a[ctr] = 2 - t1 as i32;
         ctr += 1;
       }
@@ -325,7 +325,7 @@ pub fn poly_challenge(c: &mut Poly, seed: &[u8])
   shake256_squeezeblocks(&mut buf, 1, &mut state);
 
   for i in 0..8 {
-    _signs |= (buf[i] as u64) << 8 * i;
+    _signs |= (buf[i] as u64) << (8 * i);
   }
   let mut pos: usize = 8;
   // let mut b = buf[pos];
@@ -343,8 +343,8 @@ pub fn poly_challenge(c: &mut Poly, seed: &[u8])
         break;
       }
     }
-    c.coeffs[i] = c.coeffs[b as usize];
-    c.coeffs[b as usize] = 1i32 - 2 * (_signs & 1) as i32;
+    c.coeffs[i] = c.coeffs[b];
+    c.coeffs[b] = 1i32 - 2 * (_signs & 1) as i32;
     _signs >>= 1;
   }
 }
@@ -356,7 +356,7 @@ pub fn polyeta_pack(r: &mut [u8], a: &Poly)
   let mut t = [0u8; 8];
   if ETA == 2 {
     for i in 0..N / 8 {
-      t[0] = (ETA_I32 - a.coeffs[8 * i + 0]) as u8;
+      t[0] = (ETA_I32 - a.coeffs[8 * i]) as u8;
       t[1] = (ETA_I32 - a.coeffs[8 * i + 1]) as u8;
       t[2] = (ETA_I32 - a.coeffs[8 * i + 2]) as u8;
       t[3] = (ETA_I32 - a.coeffs[8 * i + 3]) as u8;
@@ -365,13 +365,13 @@ pub fn polyeta_pack(r: &mut [u8], a: &Poly)
       t[6] = (ETA_I32 - a.coeffs[8 * i + 6]) as u8;
       t[7] = (ETA_I32 - a.coeffs[8 * i + 7]) as u8;
 
-      r[3 * i + 0] = (t[0] >> 0) | (t[1] << 3) | (t[2] << 6);
+      r[3 * i] = t[0] | (t[1] << 3) | (t[2] << 6);
       r[3 * i + 1] = (t[2] >> 2) | (t[3] << 1) | (t[4] << 4) | (t[5] << 7);
       r[3 * i + 2] = (t[5] >> 1) | (t[6] << 2) | (t[7] << 5);
     }
   } else {
     for i in 0..N / 2 {
-      t[0] = (ETA_I32 - a.coeffs[2 * i + 0]) as u8;
+      t[0] = (ETA_I32 - a.coeffs[2 * i]) as u8;
       t[1] = (ETA_I32 - a.coeffs[2 * i + 1]) as u8;
       r[i] = t[0] | (t[1] << 4);
     }
@@ -383,10 +383,10 @@ pub fn polyeta_unpack(r: &mut Poly, a: &[u8])
 {
   if ETA == 2 {
     for i in 0..N / 8 {
-      r.coeffs[8 * i + 0] = (a[3 * i + 0] & 0x07) as i32;
-      r.coeffs[8 * i + 1] = ((a[3 * i + 0] >> 3) & 0x07) as i32;
+      r.coeffs[8 * i] = (a[3 * i] & 0x07) as i32;
+      r.coeffs[8 * i + 1] = ((a[3 * i] >> 3) & 0x07) as i32;
       r.coeffs[8 * i + 2] =
-        (((a[3 * i + 0] >> 6) | (a[3 * i + 1] << 2)) & 0x07) as i32;
+        (((a[3 * i] >> 6) | (a[3 * i + 1] << 2)) & 0x07) as i32;
       r.coeffs[8 * i + 3] = ((a[3 * i + 1] >> 1) & 0x07) as i32;
       r.coeffs[8 * i + 4] = ((a[3 * i + 1] >> 4) & 0x07) as i32;
       r.coeffs[8 * i + 5] =
@@ -394,21 +394,21 @@ pub fn polyeta_unpack(r: &mut Poly, a: &[u8])
       r.coeffs[8 * i + 6] = ((a[3 * i + 2] >> 2) & 0x07) as i32;
       r.coeffs[8 * i + 7] = ((a[3 * i + 2] >> 5) & 0x07) as i32;
 
-      r.coeffs[8 * i + 0] = (ETA_I32 - r.coeffs[8 * i + 0]) as i32;
-      r.coeffs[8 * i + 1] = (ETA_I32 - r.coeffs[8 * i + 1]) as i32;
-      r.coeffs[8 * i + 2] = (ETA_I32 - r.coeffs[8 * i + 2]) as i32;
-      r.coeffs[8 * i + 3] = (ETA_I32 - r.coeffs[8 * i + 3]) as i32;
-      r.coeffs[8 * i + 4] = (ETA_I32 - r.coeffs[8 * i + 4]) as i32;
-      r.coeffs[8 * i + 5] = (ETA_I32 - r.coeffs[8 * i + 5]) as i32;
-      r.coeffs[8 * i + 6] = (ETA_I32 - r.coeffs[8 * i + 6]) as i32;
-      r.coeffs[8 * i + 7] = (ETA_I32 - r.coeffs[8 * i + 7]) as i32;
+      r.coeffs[8 * i] = ETA_I32 - r.coeffs[8 * i];
+      r.coeffs[8 * i + 1] = ETA_I32 - r.coeffs[8 * i + 1];
+      r.coeffs[8 * i + 2] = ETA_I32 - r.coeffs[8 * i + 2];
+      r.coeffs[8 * i + 3] = ETA_I32 - r.coeffs[8 * i + 3];
+      r.coeffs[8 * i + 4] = ETA_I32 - r.coeffs[8 * i + 4];
+      r.coeffs[8 * i + 5] = ETA_I32 - r.coeffs[8 * i + 5];
+      r.coeffs[8 * i + 6] = ETA_I32 - r.coeffs[8 * i + 6];
+      r.coeffs[8 * i + 7] = ETA_I32 - r.coeffs[8 * i + 7];
     }
   } else {
     for i in 0..N / 2 {
-      r.coeffs[2 * i + 0] = (a[i] & 0x0F) as i32;
+      r.coeffs[2 * i] = (a[i] & 0x0F) as i32;
       r.coeffs[2 * i + 1] = (a[i] >> 4) as i32;
-      r.coeffs[2 * i + 0] = (ETA_I32 - r.coeffs[2 * i + 0]) as i32;
-      r.coeffs[2 * i + 1] = (ETA_I32 - r.coeffs[2 * i + 1]) as i32;
+      r.coeffs[2 * i] = ETA_I32 - r.coeffs[2 * i];
+      r.coeffs[2 * i + 1] = ETA_I32 - r.coeffs[2 * i + 1];
     }
   }
 }
@@ -418,9 +418,9 @@ pub fn polyeta_unpack(r: &mut Poly, a: &[u8])
 pub fn polyt1_pack(r: &mut [u8], a: &Poly)
 {
   for i in 0..N / 4 {
-    r[5 * i + 0] = (a.coeffs[4 * i + 0] >> 0) as u8;
+    r[5 * i] = a.coeffs[4 * i] as u8;
     r[5 * i + 1] =
-      ((a.coeffs[4 * i + 0] >> 8) | (a.coeffs[4 * i + 1] << 2)) as u8;
+      ((a.coeffs[4 * i] >> 8) | (a.coeffs[4 * i + 1] << 2)) as u8;
     r[5 * i + 2] =
       ((a.coeffs[4 * i + 1] >> 6) | (a.coeffs[4 * i + 2] << 4)) as u8;
     r[5 * i + 3] =
@@ -434,7 +434,7 @@ pub fn polyt1_pack(r: &mut [u8], a: &Poly)
 pub fn polyt1_unpack(r: &mut Poly, a: &[u8])
 {
   for i in 0..N / 4 {
-    r.coeffs[4 * i + 0] = (((a[5 * i + 0] >> 0) as u32
+    r.coeffs[4 * i] = ((a[5 * i] as u32
       | (a[5 * i + 1] as u32) << 8)
       & 0x3FF) as i32;
     r.coeffs[4 * i + 1] = (((a[5 * i + 1] >> 2) as u32
@@ -455,7 +455,7 @@ pub fn polyt0_pack(r: &mut [u8], a: &Poly)
   let mut t = [0i32; 8];
 
   for i in 0..N / 8 {
-    t[0] = D_SHL - a.coeffs[8 * i + 0];
+    t[0] = D_SHL - a.coeffs[8 * i];
     t[1] = D_SHL - a.coeffs[8 * i + 1];
     t[2] = D_SHL - a.coeffs[8 * i + 2];
     t[3] = D_SHL - a.coeffs[8 * i + 3];
@@ -464,7 +464,7 @@ pub fn polyt0_pack(r: &mut [u8], a: &Poly)
     t[6] = D_SHL - a.coeffs[8 * i + 6];
     t[7] = D_SHL - a.coeffs[8 * i + 7];
 
-    r[13 * i + 0] = (t[0]) as u8;
+    r[13 * i] = (t[0]) as u8;
     r[13 * i + 1] = (t[0] >> 8) as u8;
     r[13 * i + 1] |= (t[1] << 5) as u8;
     r[13 * i + 2] = (t[1] >> 3) as u8;
@@ -492,9 +492,9 @@ pub fn polyt0_pack(r: &mut [u8], a: &Poly)
 pub fn polyt0_unpack(r: &mut Poly, a: &[u8])
 {
   for i in 0..N / 8 {
-    r.coeffs[8 * i + 0] = a[13 * i + 0] as i32;
-    r.coeffs[8 * i + 0] |= (a[13 * i + 1] as i32) << 8;
-    r.coeffs[8 * i + 0] &= 0x1FFF;
+    r.coeffs[8 * i] = a[13 * i] as i32;
+    r.coeffs[8 * i] |= (a[13 * i + 1] as i32) << 8;
+    r.coeffs[8 * i] &= 0x1FFF;
 
     r.coeffs[8 * i + 1] = (a[13 * i + 1] as i32) >> 5;
     r.coeffs[8 * i + 1] |= (a[13 * i + 2] as i32) << 3;
@@ -528,7 +528,7 @@ pub fn polyt0_unpack(r: &mut Poly, a: &[u8])
     r.coeffs[8 * i + 7] |= (a[13 * i + 12] as i32) << 5;
     r.coeffs[8 * i + 7] &= 0x1FFF; // TODO: Unnecessary mask?
 
-    r.coeffs[8 * i + 0] = D_SHL - r.coeffs[8 * i + 0];
+    r.coeffs[8 * i] = D_SHL - r.coeffs[8 * i];
     r.coeffs[8 * i + 1] = D_SHL - r.coeffs[8 * i + 1];
     r.coeffs[8 * i + 2] = D_SHL - r.coeffs[8 * i + 2];
     r.coeffs[8 * i + 3] = D_SHL - r.coeffs[8 * i + 3];
@@ -547,12 +547,12 @@ pub fn polyz_pack(r: &mut [u8], a: &Poly)
   let mut t = [0i32; 4];
   if GAMMA1 == (1 << 17) {
     for i in 0..N / 4 {
-      t[0] = GAMMA1_I32 - a.coeffs[4 * i + 0];
+      t[0] = GAMMA1_I32 - a.coeffs[4 * i];
       t[1] = GAMMA1_I32 - a.coeffs[4 * i + 1];
       t[2] = GAMMA1_I32 - a.coeffs[4 * i + 2];
       t[3] = GAMMA1_I32 - a.coeffs[4 * i + 3];
 
-      r[9 * i + 0] = (t[0]) as u8;
+      r[9 * i] = (t[0]) as u8;
       r[9 * i + 1] = (t[0] >> 8) as u8;
       r[9 * i + 2] = (t[0] >> 16) as u8;
       r[9 * i + 2] |= (t[1] << 2) as u8;
@@ -567,10 +567,10 @@ pub fn polyz_pack(r: &mut [u8], a: &Poly)
     }
   } else if GAMMA1 == 1 << 19 {
     for i in 0..N / 2 {
-      t[0] = GAMMA1_I32 - a.coeffs[2 * i + 0];
+      t[0] = GAMMA1_I32 - a.coeffs[2 * i];
       t[1] = GAMMA1_I32 - a.coeffs[2 * i + 1];
 
-      r[5 * i + 0] = (t[0]) as u8;
+      r[5 * i] = (t[0]) as u8;
       r[5 * i + 1] = (t[0] >> 8) as u8;
       r[5 * i + 2] = (t[0] >> 16) as u8;
       r[5 * i + 2] |= (t[1] << 4) as u8;
@@ -587,10 +587,10 @@ pub fn polyz_unpack(r: &mut Poly, a: &[u8])
 {
   if GAMMA1 == (1 << 17) {
     for i in 0..N / 4 {
-      r.coeffs[4 * i + 0] = a[9 * i + 0] as i32;
-      r.coeffs[4 * i + 0] |= (a[9 * i + 1] as i32) << 8;
-      r.coeffs[4 * i + 0] |= (a[9 * i + 2] as i32) << 16;
-      r.coeffs[4 * i + 0] &= 0x3FFFF;
+      r.coeffs[4 * i] = a[9 * i] as i32;
+      r.coeffs[4 * i] |= (a[9 * i + 1] as i32) << 8;
+      r.coeffs[4 * i] |= (a[9 * i + 2] as i32) << 16;
+      r.coeffs[4 * i] &= 0x3FFFF;
 
       r.coeffs[4 * i + 1] = (a[9 * i + 2] as i32) >> 2;
       r.coeffs[4 * i + 1] |= (a[9 * i + 3] as i32) << 6;
@@ -607,24 +607,24 @@ pub fn polyz_unpack(r: &mut Poly, a: &[u8])
       r.coeffs[4 * i + 3] |= (a[9 * i + 8] as i32) << 10;
       r.coeffs[4 * i + 3] &= 0x3FFFF; // TODO: Unnecessary mask?
 
-      r.coeffs[4 * i + 0] = GAMMA1_I32 - r.coeffs[4 * i + 0];
+      r.coeffs[4 * i] = GAMMA1_I32 - r.coeffs[4 * i];
       r.coeffs[4 * i + 1] = GAMMA1_I32 - r.coeffs[4 * i + 1];
       r.coeffs[4 * i + 2] = GAMMA1_I32 - r.coeffs[4 * i + 2];
       r.coeffs[4 * i + 3] = GAMMA1_I32 - r.coeffs[4 * i + 3];
     }
   } else if GAMMA1 == 1 << 19 {
     for i in 0..N / 2 {
-      r.coeffs[2 * i + 0] = a[5 * i + 0] as i32;
-      r.coeffs[2 * i + 0] |= (a[5 * i + 1] as i32) << 8;
-      r.coeffs[2 * i + 0] |= (a[5 * i + 2] as i32) << 16;
-      r.coeffs[2 * i + 0] &= 0xFFFFF;
+      r.coeffs[2 * i] = a[5 * i] as i32;
+      r.coeffs[2 * i] |= (a[5 * i + 1] as i32) << 8;
+      r.coeffs[2 * i] |= (a[5 * i + 2] as i32) << 16;
+      r.coeffs[2 * i] &= 0xFFFFF;
 
       r.coeffs[2 * i + 1] = (a[5 * i + 2] as i32) >> 4;
       r.coeffs[2 * i + 1] |= (a[5 * i + 3] as i32) << 4;
       r.coeffs[2 * i + 1] |= (a[5 * i + 4] as i32) << 12;
-      r.coeffs[2 * i + 0] &= 0xFFFFF; // TODO: Unnecessary mask?
+      r.coeffs[2 * i] &= 0xFFFFF; // TODO: Unnecessary mask?
 
-      r.coeffs[2 * i + 0] = GAMMA1_I32 - r.coeffs[2 * i + 0];
+      r.coeffs[2 * i] = GAMMA1_I32 - r.coeffs[2 * i];
       r.coeffs[2 * i + 1] = GAMMA1_I32 - r.coeffs[2 * i + 1];
     }
   }
@@ -636,8 +636,8 @@ pub fn polyw1_pack(r: &mut [u8], a: &Poly)
 {
   if GAMMA2 == (Q - 1) / 88 {
     for i in 0..N / 4 {
-      r[3 * i + 0] = a.coeffs[4 * i + 0] as u8;
-      r[3 * i + 0] |= (a.coeffs[4 * i + 1] << 6) as u8;
+      r[3 * i] = a.coeffs[4 * i] as u8;
+      r[3 * i] |= (a.coeffs[4 * i + 1] << 6) as u8;
       r[3 * i + 1] = (a.coeffs[4 * i + 1] >> 2) as u8;
       r[3 * i + 1] |= (a.coeffs[4 * i + 2] << 4) as u8;
       r[3 * i + 2] = (a.coeffs[4 * i + 2] >> 4) as u8;
@@ -645,7 +645,7 @@ pub fn polyw1_pack(r: &mut [u8], a: &Poly)
     }
   } else {
     for i in 0..N / 2 {
-      r[i] = (a.coeffs[2 * i + 0] | (a.coeffs[2 * i + 1] << 4)) as u8;
+      r[i] = (a.coeffs[2 * i] | (a.coeffs[2 * i + 1] << 4)) as u8;
     }
   }
 }

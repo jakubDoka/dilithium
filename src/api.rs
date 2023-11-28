@@ -114,5 +114,5 @@ pub fn verify(
   if sig.len() != SIGNBYTES {
     return Err(SignError::Input);
   }
-  crypto_sign_verify(&sig, &msg, public_key)
+  crypto_sign_verify(sig, msg, public_key)
 }

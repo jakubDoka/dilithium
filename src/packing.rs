@@ -148,7 +148,7 @@ pub fn unpack_sig(
     }
     for j in k..sig[idx + OMEGA + i] as usize {
       // Coefficients are ordered for strong unforgeability
-      if j > k && sig[idx + j as usize] <= sig[idx + j as usize - 1] {
+      if j > k && sig[idx + j] <= sig[idx + j - 1] {
         return Err(SignError::Input);
       }
       h.vec[i].coeffs[sig[idx + j] as usize] = 1;
@@ -158,7 +158,7 @@ pub fn unpack_sig(
 
   // Extra indices are zero for strong unforgeability
   for j in k..OMEGA {
-    if sig[idx + j as usize] > 0 {
+    if sig[idx + j] > 0 {
       return Err(SignError::Input);
     }
   }

@@ -60,7 +60,7 @@ pub fn crypto_sign_keypair(
   shake256(&mut tr, SEEDBYTES, pk, PUBLICKEYBYTES);
   pack_sk(sk, &rho, &tr, &key, &t0, &s1, &s2);
 
-  return 0;
+  0
 }
 
 pub fn crypto_sign_signature(
@@ -92,7 +92,7 @@ pub fn crypto_sign_signature(
     &mut t0,
     &mut s1,
     &mut s2,
-    &sk,
+    sk,
   );
 
   // Compute CRH(tr, msg)
@@ -129,7 +129,7 @@ pub fn crypto_sign_signature(
 
     state.init();
     shake256_absorb(&mut state, &keymu[SEEDBYTES..], CRHBYTES);
-    shake256_absorb(&mut state, &sig, K * POLYW1_PACKEDBYTES);
+    shake256_absorb(&mut state, sig, K * POLYW1_PACKEDBYTES);
     shake256_finalize(&mut state);
     shake256_squeeze(sig, SEEDBYTES, &mut state);
     poly_challenge(&mut cp, sig);
@@ -199,9 +199,7 @@ pub fn crypto_sign_verify(
   }
 
   unpack_pk(&mut rho, &mut t1, pk);
-  if let Err(e) = unpack_sig(&mut c, &mut z, &mut h, sig) {
-    return Err(e);
-  }
+  unpack_sig(&mut c, &mut z, &mut h, sig)?;
   if polyvecl_chknorm(&z, (GAMMA1 - BETA) as i32) > 0 {
     return Err(SignError::Input);
   }
@@ -223,7 +221,7 @@ pub fn crypto_sign_verify(
   poly_ntt(&mut cp);
   polyveck_shiftl(&mut t1);
   polyveck_ntt(&mut t1);
-  let t1_2 = t1.clone();
+  let t1_2 = t1;
   polyveck_pointwise_poly_montgomery(&mut t1, &cp, &t1_2);
 
   polyveck_sub(&mut w1, &t1);
